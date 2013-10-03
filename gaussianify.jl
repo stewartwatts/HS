@@ -61,26 +61,61 @@ function f7(x)
     x
 end
 
-funcs = [f1, f2, f3, f4, f5, f6, f7]
-    
+function f8(x)
+    x ** 10*rand()
+end
+
+function f9(x)
+    x ** 1/(10*rand())
+end  
+
+funcs = [f1, f2, f3, f4, f5, f6, f7, f8, f9]
+
+# function with metrics
+function score_gauss(df)
+    kurts = map(c -> kurtosis(df[c]), colnames(df)) 
+    skews = map(c -> skew(df[c]), colnames(df)) 
+    return (kurts, skews)
+end
+
+
 # create a DataFrame with well-behaved and messy columns
-df = DataFrame()
-for i in 1:7
-    df[string("x",i)] = funcs[i](randn(10000))
+df = DataFrame(randn(10000,8*length(funcs)));
+for i in 1:length(funcs)
+    #df[string("x",i)] = funcs[i](df[string("x",i)])
+    plot(df[string("x",i)])
 end
-for i in 8:24
+for i in (length(funcs)+1):4*length(funcs)
     fs = sample(1:length(funcs),2)
-    df[string("x",i)] = funcs[fs[1]](funcs[fs[2]](randn(10000)))
+    df[string("x",i)] = funcs[fs[1]](funcs[fs[2]](df[string("x",i)]))
 end
-for i in 25:50
+for i in (4*length(funcs)+1):8*length(funcs)
     fs = sample(1:length(funcs),3)
-    df[string("x",i)] = funcs[fs[1]](funcs[fs[2]](funcs[fs[3]](randn(10000))))
+    df[string("x",i)] = funcs[fs[1]](funcs[fs[2]](funcs[fs[3]](df[string("x",i)])))
 end
 
+function show_metrics(df::DataFrame)
+    ####
+end
 
-# gaussianify
+#   ---- gaussianify ----
 # - take log of variable
 # - remove mode (ex: -999 being error value) 
 # - cut sorted variable  at left tail, right tail, both tails
 # - WARN: heavy quantization, too many NAs
+function gaussy()
+    ####
+end
 
+show_metrics(df)
+df = gaussy(df)
+show_metrics(df)
+
+function double!(x)
+    x = 2 * x
+    return
+end
+
+function double(x)
+    x = 2*x
+end
