@@ -2,32 +2,32 @@
 using DataFrames
 using Distributions
 
-# upper index that is 1% - 15% of a vector's length
-upperindex(x::DataArray{Float64,1}) = int(length(x)/100 * rand()*14 + 1)
+# upper index that is 1% - 12% of a vector's non-NA length
+upperindex(x::DataArray{Float64,1}) = ifloor(length(removeNA(x))/100 * rand()*11 + 1)
 
 # identity
 f1(x::DataArray{Float64,1}) = x
 
 # log
-f2(x::DataArray{Float64,1}) = log(x)
+f2(x::DataArray{Float64,1}) = min(x) > 0.0 ? log(x) : x
 
 # exponential
 f3(x::DataArray{Float64,1}) = exp(x)
 
-# number indicating missing value assigned to to 1-15% of vector
+# number indicating missing value assigned to to 1-12% of vector
 function f4(x::DataArray{Float64,1})
     y = deepcopy(x)
     for _ in 1:upperindex(y)
-        y[int(rand()*length(y))+1] = -999
+        y[ifloor(rand()*length(y))+1] = -999
     end
     return y
 end
 
-# NA assigned to 1-15% of vector
+# NA assigned to 1-12% of vector
 function f5(x::DataArray{Float64,1})
     y = deepcopy(x)
     for _ in 1:upperindex(y)
-        y[int(rand()*length(y))+1] = NA
+        y[ifloor(rand()*length(y))+1] = NA
     end
     return y
 end
@@ -35,13 +35,13 @@ end
 # upper tail discontinuous
 function f6(x::DataArray{Float64,1})
     y = deepcopy(x)
-    lowertail = int(length(y)/100.0 * (1 + 5*rand()))
-    uppertail = int(length(y)/100.0 * (100 - int(1 + 5*rand())))
+    lowertail = ifloor(length(removeNA(y))/100.0 * ifloor(1 + 5*rand()))
+    uppertail = ifloor(length(removeNA(y))/100.0 * (100 - ifloor(1 + 5*rand())))
     loy = sort(removeNA(y))[lowertail]
     upy = sort(removeNA(y))[uppertail]
     yrng = upy-loy
     for _ in 1:upperindex(y)
-        y[int(rand()*length(y)+1)] = upy + yrng*(1+rand())
+        y[ifloor(rand()*length(y)+1)] = upy + yrng*(1+rand())
     end
     return y
 end
@@ -49,8 +49,8 @@ end
 # lower tail discontinuous
 function f7(x::DataArray{Float64,1})
     y = deepcopy(x)
-    lowertail = int(length(y)/100.0 * (1 + 5*rand()))
-    uppertail = int(length(y)/100.0 * (100 - int(1 + 5*rand())))
+    lowertail = ifloor(length(removeNA(y))/100.0 * ifloor(1 + 5*rand()))
+    uppertail = ifloor(length(removeNA(y))/100.0 * (100 - ifloor(1 + 5*rand())))
     loy = sort(removeNA(y))[lowertail]
     upy = sort(removeNA(y))[uppertail]
     yrng = upy-loy
@@ -60,19 +60,19 @@ function f7(x::DataArray{Float64,1})
     return y
 end
 
-# both tails disconinuous
+# both tails discontinuous
 function f8(x::DataArray{Float64,1})
     y = deepcopy(x)
-    lowertail = int(length(y)/100.0 * (1 + 5*rand()))
-    uppertail = int(length(y)/100.0 * (100 - int(1 + 5*rand())))
+    lowertail = ifloor(length(removeNA(y))/100.0 * ifloor(1 + 5*rand()))
+    uppertail = ifloor(length(removeNA(y))/100.0 * (100 - ifloor(1 + 5*rand())))
     loy = sort(removeNA(y))[lowertail]
     upy = sort(removeNA(y))[uppertail]
     yrng = upy-loy
-    for _ in 1:int(upperindex(y)/2)
-        y[int(rand()*length(y)+1)] = upy + yrng*(1+rand())
+    for _ in 1:ifloor(upperindex(y)/2)
+        y[ifloor(rand()*length(y)+1)] = upy + yrng*(1+rand())
     end
-    for _ in 1:int(upperindex(y)/2)
-        y[int(rand()*length(y)+1)] = loy - yrng*(1+rand())
+    for _ in 1:ifloor(upperindex(y)/2)
+        y[ifloor(rand()*length(y)+1)] = loy - yrng*(1+rand())
     end
     return y
 end
@@ -80,13 +80,13 @@ end
 # power up
 function f9(x::DataArray{Float64,1})
     y = x .^ (10*rand())
-    return sum(isnan(y)) == 0 ? y : x
+    return sum(isnan(removeNA(y))) == 0 ? y : x
 end
 
 # power down
 function f10(x::DataArray{Float64,1})
     y = x .^ (1/(10*rand()))
-    return sum(isnan(y)) == 0 ? y : x
+    return sum(isnan(removeNA(y))) == 0 ? y : x
 end   
 
 # negative power / reciprocal
