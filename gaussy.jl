@@ -8,14 +8,17 @@ upperindex(x::DataArray{Float64,1}) = ifloor(length(removeNA(x))/100 * rand()*11
 # identity
 f1(x::DataArray{Float64,1}) = x
 
+# make all-positive (probably)
+f2(x::DataArray{Float64,1}) = 20 + x * 3
+
 # log
-f2(x::DataArray{Float64,1}) = min(x) > 0.0 ? log(x) : x
+f3(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? log(x) : x
 
 # exponential
-f3(x::DataArray{Float64,1}) = exp(x)
+f4(x::DataArray{Float64,1}) = exp(x)
 
 # number indicating missing value assigned to to 1-12% of vector
-function f4(x::DataArray{Float64,1})
+function f5(x::DataArray{Float64,1})
     y = deepcopy(x)
     for _ in 1:upperindex(y)
         y[ifloor(rand()*length(y))+1] = -999
@@ -24,7 +27,7 @@ function f4(x::DataArray{Float64,1})
 end
 
 # NA assigned to 1-12% of vector
-function f5(x::DataArray{Float64,1})
+function f6(x::DataArray{Float64,1})
     y = deepcopy(x)
     for _ in 1:upperindex(y)
         y[ifloor(rand()*length(y))+1] = NA
@@ -33,7 +36,7 @@ function f5(x::DataArray{Float64,1})
 end
 
 # upper tail discontinuous
-function f6(x::DataArray{Float64,1})
+function f7(x::DataArray{Float64,1})
     y = deepcopy(x)
     lowertail = ifloor(length(removeNA(y))/100.0 * ifloor(1 + 5*rand()))
     uppertail = ifloor(length(removeNA(y))/100.0 * (100 - ifloor(1 + 5*rand())))
@@ -47,7 +50,7 @@ function f6(x::DataArray{Float64,1})
 end
 
 # lower tail discontinuous
-function f7(x::DataArray{Float64,1})
+function f8(x::DataArray{Float64,1})
     y = deepcopy(x)
     lowertail = ifloor(length(removeNA(y))/100.0 * ifloor(1 + 5*rand()))
     uppertail = ifloor(length(removeNA(y))/100.0 * (100 - ifloor(1 + 5*rand())))
@@ -55,13 +58,13 @@ function f7(x::DataArray{Float64,1})
     upy = sort(removeNA(y))[uppertail]
     yrng = upy-loy
     for _ in 1:upperindex(y)
-        y[int(rand()*length(y)+1)] = loy - yrng*(1+rand())
+        y[ifloor(rand()*length(y)+1)] = loy - yrng*(1+rand())
     end
     return y
 end
 
 # both tails discontinuous
-function f8(x::DataArray{Float64,1})
+function f9(x::DataArray{Float64,1})
     y = deepcopy(x)
     lowertail = ifloor(length(removeNA(y))/100.0 * ifloor(1 + 5*rand()))
     uppertail = ifloor(length(removeNA(y))/100.0 * (100 - ifloor(1 + 5*rand())))
@@ -78,21 +81,21 @@ function f8(x::DataArray{Float64,1})
 end
 
 # power up
-function f9(x::DataArray{Float64,1})
+function f10(x::DataArray{Float64,1})
     y = x .^ (10*rand())
     return sum(isnan(removeNA(y))) == 0 ? y : x
 end
 
 # power down
-function f10(x::DataArray{Float64,1})
+function f11(x::DataArray{Float64,1})
     y = x .^ (1/(10*rand()))
     return sum(isnan(removeNA(y))) == 0 ? y : x
 end   
 
 # negative power / reciprocal
-f11(x::DataArray{Float64,1}) = 1 ./ x
+f12(x::DataArray{Float64,1}) = 1 ./ x
 
-funcs = [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11]
+funcs = [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12]
 
 # function with metrics
 function score_gauss(df::DataFrame)
