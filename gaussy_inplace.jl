@@ -12,7 +12,8 @@ function f1!(x::DataArray{Float64,1})
     end
     return
 end
-    
+
+# log
 function f2!(x::DataArray{Float64,1})
     for i in 1:length(x)
         x[i] = log(x[i])
@@ -91,6 +92,7 @@ function f8!(x::DataArray{Float64,1})
     return
 end
 
+# power up
 function f9!(x::DataArray{Float64,1})
     for i in 1:length(x)
         x[i] = x[i] ^ (10*rand())
@@ -98,9 +100,18 @@ function f9!(x::DataArray{Float64,1})
     return
 end
 
+# power down
 function f10!(x::DataArray{Float64,1})
     for i in 1:length(x)
         x[i] = x[i] ^ (1/(10*rand()))
+    end
+    return
+end
+
+# negative power / reciprocal
+function f11!(x::DataArray{Float64,1})
+    for i in 1:length(x)
+        x[i] = x[i] ^ (-1.0)
     end
     return
 end

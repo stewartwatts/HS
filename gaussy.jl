@@ -81,19 +81,13 @@ function f9(x::DataArray{Float64,1})
 end
 
 # power up
-function f10(x::DataArray{Float64,1})
-    y = x .^ (10*rand())
-    return sum(isnan(removeNA(y))) == 0 ? y : x
-end
-
+f10(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? x .^ (10*rand()) : x
+    
 # power down
-function f11(x::DataArray{Float64,1})
-    y = x .^ (1/(10*rand()))
-    return sum(isnan(removeNA(y))) == 0 ? y : x
-end   
+f11(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? x .^ (1.0/(10*rand())) : x
 
 # negative power / reciprocal
-f12(x::DataArray{Float64,1}) = 1 ./ x
+f12(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? 1 ./ x : x
 
 funcs = [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12]
 
@@ -126,20 +120,33 @@ end
 # - cut sorted variable  at left tail, right tail, both tails
 # - WARN: heavy quantization, too many NAs
 
-g1(x::DataArray{Float64,1}) = log(x)  # log
-g2(x::DataArray{Float64,1}) = 1/x     # reciprocal
-g3(x::DataArray{Float64,1}) = exp(x)  # exponential
-g4(x::DataArray{Float64,1}) = x.^2    # power up
-g5(x::DataArray{Float64,1}) = x.^0.5  # power down
+# log
+g1(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? log(x) : x
+
+# reciprocal
+g2(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? 1.0 / x : x
+
+# exponential
+g3(x::DataArray{Float64,1}) = exp(x)
+
+# power up
+g4(x::DataArray{Float64,1}) = x.^2
+
+# power down
+g5(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? x.^0.5 : x
+
+# mode removal
 function g6(x::DataArray{Float64,1})
+    y = deepcopy(x)
     # convert non-NA mode to NA (it may be missing)
-    tab = table(x)
-    (cnt, xmode) = max([isna(k) ? (NA,-1) : (v,k) for (k,v) in tab])
+    tab = table(y)
+    (cnt, ymode) = max([isna(k) ? (NA,-1) : (v,k) for (k,v) in tab])
     if cnt > 1
-        x[x .== xmode] = NA
+        y[y .== ymode] = NA
     end
-    return x
+    return y
 end
+
 function g7(x::DataArray{Float64,1}, lo_cut::Int64, hi_cut::Int64)
     # chop off vals above / below a set of quantiles
     
