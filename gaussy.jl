@@ -144,17 +144,20 @@ end
 function diagnostic_msg(x::DataArray{Float64,1})
     msg = []
     if float(sum(isna(x)))/length(x) > 0.25
-        msg = [msg, "Over 25% NA; "]
+        msg = [msg, "Over 25% NA;"]
     elseif float(sum(isna(x)))/length(x) > 0.10
-        msg = [msg, "Over 10% NA; "]
+        msg = [msg, "Over 10% NA;"]
     end
     tab = table(x)
     if length(tab) < 0.10 * length(x)
-        msg = [msg, "Heavy quantization; "]
+        msg = [msg, "Heavy quantization;"]
     end
-    
+    return join(msg, " ")
 end
 
+
+# identity
+g0(x::DataArray{Float64,1}) = x
 
 # log
 g1(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? log(x) : x
@@ -212,17 +215,49 @@ function g8(x::DataArray{Float64,1})
 end
 
     
-function gaussy(df::DataArray{Float64,1}, log=false)
+function gaussy!(df::DataArray{Float64,1}, log=false, filename="logs/gaussy_log.txt")
+    # gaussifiers => log messages
+    gs = [global g0 => "none;",
+          global g1 => "log(x);",
+          global g2 => "1/x;",
+          global g3 => "exp(x);",
+          global g4 => "x.^2;",
+          global g5 => "x.^0.5",
+          global g6 => "mode->NA;",
+          global g7 => "upp_tail->NA;",
+          global g8 => "low_tail->NA;"}
     if log
         init_log()
+        counts = {g: 0 for g in gs}
+        kurt_vals = {cn: [kurtosis(removeNA(df[cn]))] for cn in colnames(df)}
     end
-    gs = [global g1, global g2, global g3, global g4,
-          global g5, global g6, global g7]
     # loop over cols, greedily replacing as abs(kurt) declines
     for cn in colnames(df)
+        if log
+            msg = []
+        end
         tmp = deepcopy(df[cn])
-        while 
+        kurts = {g[1] => kurtosis(removeNA(g[1](tmp))) for g in gs}
+        best_kurt = min(map(abs, [k[2] for k in kurts]))
+        while abs(kurts[g0]) > 1.0 && best_kurt <= abs(kurts[g0]) - 1.0
+            min_g = filter(k -> abs(k[2]) == best_kurt, [k for k in kurts])[1][1]
+            tmp = min_g(tmp)
+            kurts = {g[1] => kurtosis(removeNA(g[1](tmp))) for g in gs}
+            best_kurt = min(map(abs, [k[2] for k in kurts]))
+            if log
+                counts[min_g] += 1
+                kurt_vals = [kurt_val, best_kurt]
+                msg = [msg, gs[min_g]]
+            end
+        end
+        if log
+            all_msg = string(cn, ":\ntransforms", join(msg, " "), "\nkurt vals:", join(map(string, kurt_vals[cn]), " "), "\ndiagnostics: ", diagnositc_msg(), "\n\n")
+            write_log(filename, all_msg)
+        end
+        # modify df IN-PLACE
+        df[cn] = tmp
     end
+    return
 end
 
 show_metrics(df)
@@ -231,4 +266,12 @@ show_metrics(df)
 
 
 
-    
+gs = {g0 => "none;",
+           g1 => "log(x);",
+           g2 => "1/x;",
+           g3 => "exp(x);",
+           g4 => "x.^2;",
+           g5 => "x.^0.5",
+           g6 => "mode->NA;",
+           g7 => "upp_tail->NA;",
+           g8 => "low_tail->NA;"}
