@@ -91,14 +91,7 @@ f12(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? 1 ./ x : x
 
 funcs = [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12]
 
-# function with metrics
-function score_gauss(df::DataFrame)
-    kurts = map(c -> kurtosis(removeNA(df[c])), colnames(df)) 
-    skews = map(c -> skewness(removeNA(df[c])), colnames(df)) 
-    return (kurts, skews)
-end
-
-
+##  -- implement test data set --  ##
 # create a DataFrame with messy, un-gaussian columns
 df = DataFrame(randn(10000,8*length(funcs)));
 for i in 1:length(funcs)
@@ -115,10 +108,53 @@ end
 
 
 #   ---- gaussianify ----
-# - take log of variable
+# - take transformations of variable
 # - remove mode (ex: -999 being error value) 
-# - cut sorted variable  at left tail, right tail, both tails
+# - cut sorted variable at left tail, right tail, both tails
 # - WARN: heavy quantization, too many NAs
+
+# function with metrics
+function score_gauss(df::DataFrame)
+    kurts = map(c -> kurtosis(removeNA(df[c])), colnames(df)) 
+    skews = map(c -> skewness(removeNA(df[c])), colnames(df)) 
+    return (kurts, skews)
+end
+
+function init_log(filename)
+    if !isdir("logs")
+        run(`mkdir logs/`)
+    end
+    if isfile(joinpath("logs", filename))
+        # kill file so it can be overwritten
+        run(`rm $(joinpath("logs",filename))`)
+    end
+end
+    
+function write_log(filename, msg):
+    open(filename, "a") do f
+        write(f, msg)
+    end
+end
+
+### TODO TODO
+function summarize_log(path="logs/gaussy_log.txt")
+end
+### TODO TODO
+    
+function diagnostic_msg(x::DataArray{Float64,1})
+    msg = []
+    if float(sum(isna(x)))/length(x) > 0.25
+        msg = [msg, "Over 25% NA; "]
+    elseif float(sum(isna(x)))/length(x) > 0.10
+        msg = [msg, "Over 10% NA; "]
+    end
+    tab = table(x)
+    if length(tab) < 0.10 * length(x)
+        msg = [msg, "Heavy quantization; "]
+    end
+    
+end
+
 
 # log
 g1(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? log(x) : x
@@ -147,21 +183,52 @@ function g6(x::DataArray{Float64,1})
     return y
 end
 
-function g7(x::DataArray{Float64,1}, lo_cut::Int64, hi_cut::Int64)
-    # chop off vals above / below a set of quantiles
-    
+# chop values above certain quantile
+function g7(x::DataArray{Float64,1})
+    x_na = removeNA(x)
+    kurts = {c => kurtosis(x_na[find(x_na .<= quantile(x_na, c))]) for c in [1.0 0.99 0.98 0.97 0.96 0.95]}
+    qnt = 1.0
+    while qnt > 0.95 && abs(kurts[qnt]) - abs(kurts[qnt-0.01]) > 1.0
+        qnt -= 0.01
+    end
+    cut_val = quantile(x_na, qnt)
+    y = deepcopy(x)
+    y[find(y .> cut_val)] = NA
+    return y
 end
 
-function gaussy(df::DataArray{Float64,1})
-    fixers = [global g1,
-              global g2,
-              global g3,
-              global g4,
-              global g5,
-              global g6,
-              global g7]
+# chop values below certain quantile
+function g8(x::DataArray{Float64,1})
+    x_na = removeNA(x)
+    kurts = {c => kurtosis(x_na[find(x_na .>= quantile(x_na, c))]) for c in [0.0 0.01 0.02 0.03 0.04 0.05]}
+    qnt = 0.0
+    while qnt < 0.05 && abs(kurts[qnt]) - abs(kurts[qnt+0.01]) > 1.0
+        qnt += 0.01
+    end
+    cut_val = quantile(x_na, qnt)
+    y = deepcopy(x)
+    y[find(y .< cut_val)] = NA
+    return y
+end
+
+    
+function gaussy(df::DataArray{Float64,1}, log=false)
+    if log
+        init_log()
+    end
+    gs = [global g1, global g2, global g3, global g4,
+          global g5, global g6, global g7]
+    # loop over cols, greedily replacing as abs(kurt) declines
+    for cn in colnames(df)
+        tmp = deepcopy(df[cn])
+        while 
+    end
 end
 
 show_metrics(df)
 df = gaussy(df)
 show_metrics(df)
+
+
+
+    
