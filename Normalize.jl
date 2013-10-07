@@ -1,33 +1,33 @@
 # inspiration: http://blog.explainmydata.com/2012/07/should-you-apply-pca-to-your-data.html
-module Normalize
+module Preprocess
 
 using DataFrames
 using DimensionalityReduction
 
-export NormedData
+export PreprocessRoutine
 
-type NormedData
-    X::DataFrame
-    numerical_cols = filter(c -> eltype(X[c]) <: Number, colnames(X))
-    other_cols = filter(c -> !(eltype(X[c]) <: Number), colnames(X))
-    num_X = X[:, numerical_cols]
-    oth_X = X[:, other_cols]
-end
-
-# 0. scan a dataframe for numerical features that look problematic
-#    - strongly non-Gaussian, discontinuous, heavily quantized, log-scale
-#    - give helpful warnings or suggested 
-
-
-# 1. PCA on raw data
-f1 = pca;
-
-# 2. PCA on sphered data (each dimension zero mean, unit variance)
-function f2(num_X::DataFrame)
+type PreprocessRoutine
     
 end
 
-# 3. PCA on zero-to-one normalized data
+# 0. scan a dataframe for numerical features that look problematic
+#    - strongly non-Gaussian, discontinuous, heavily quantized, log-scale, too many NA
+#    - give helpful warnings or suggested
+
+
+# 1. PCA on centered data
+f1 = df_pca;
+
+# 2. PCA on sphered data (each dimension zero mean, unit variance)
+function f2(num_X::DataFrame, cutoff=0.99)
+    for cn in colnames(num_X)
+        num_X[cn] = (num_X[cn] - mean(num_X[cn])) / std(num_X[cn])
+    end
+    df_pca(num_X)
+end
+
+# 3. PCA on [-1 : 1] normalized data
+
 
 # 4. ZCA whitening on raw data (rotation + scaling --> identity covariance)
 

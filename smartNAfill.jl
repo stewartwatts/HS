@@ -19,7 +19,7 @@ means, stds, fits = {}, {}, {}
 
 srand(1)
     
-# insert NAs to feature vectors (not into Fertility, the repsponse variable)
+# insert NAs to feature vectors (not into Fertility, the response variable)
 cols = filter(c -> !(c in ["", response]), colnames(df))
 for col in cols
     for _ in 1:10
