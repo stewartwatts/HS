@@ -12,10 +12,10 @@ f1(x::DataArray{Float64,1}) = x
 f2(x::DataArray{Float64,1}) = log(x)
 
 # exponential
-f2(x::DataArray{Float64,1}) = exp(x)
+f3(x::DataArray{Float64,1}) = exp(x)
 
 # number indicating missing value assigned to to 1-15% of vector
-function f3(x::DataArray{Float64,1})
+function f4(x::DataArray{Float64,1})
     y = deepcopy(x)
     for _ in 1:upperindex(y)
         y[int(rand()*length(y))+1] = -999
@@ -24,7 +24,7 @@ function f3(x::DataArray{Float64,1})
 end
 
 # NA assigned to 1-15% of vector
-function f4(x::DataArray{Float64,1})
+function f5(x::DataArray{Float64,1})
     y = deepcopy(x)
     for _ in 1:upperindex(y)
         y[int(rand()*length(y))+1] = NA
@@ -33,12 +33,12 @@ function f4(x::DataArray{Float64,1})
 end
 
 # upper tail discontinuous
-function f5(x::DataArray{Float64,1})
+function f6(x::DataArray{Float64,1})
     y = deepcopy(x)
     lowertail = int(length(y)/100.0 * (1 + 5*rand()))
     uppertail = int(length(y)/100.0 * (100 - int(1 + 5*rand())))
-    loy = sort(y)[lowertail]
-    upy = sort(y)[uppertail]
+    loy = sort(removeNA(y))[lowertail]
+    upy = sort(removeNA(y))[uppertail]
     yrng = upy-loy
     for _ in 1:upperindex(y)
         y[int(rand()*length(y)+1)] = upy + yrng*(1+rand())
@@ -47,12 +47,12 @@ function f5(x::DataArray{Float64,1})
 end
 
 # lower tail discontinuous
-function f6(x::DataArray{Float64,1})
+function f7(x::DataArray{Float64,1})
     y = deepcopy(x)
     lowertail = int(length(y)/100.0 * (1 + 5*rand()))
     uppertail = int(length(y)/100.0 * (100 - int(1 + 5*rand())))
-    loy = sort(y)[lowertail]
-    upy = sort(y)[uppertail]
+    loy = sort(removeNA(y))[lowertail]
+    upy = sort(removeNA(y))[uppertail]
     yrng = upy-loy
     for _ in 1:upperindex(y)
         y[int(rand()*length(y)+1)] = loy - yrng*(1+rand())
@@ -61,12 +61,12 @@ function f6(x::DataArray{Float64,1})
 end
 
 # both tails disconinuous
-function f7(x::DataArray{Float64,1})
+function f8(x::DataArray{Float64,1})
     y = deepcopy(x)
     lowertail = int(length(y)/100.0 * (1 + 5*rand()))
     uppertail = int(length(y)/100.0 * (100 - int(1 + 5*rand())))
-    loy = sort(y)[lowertail]
-    upy = sort(y)[uppertail]
+    loy = sort(removeNA(y))[lowertail]
+    upy = sort(removeNA(y))[uppertail]
     yrng = upy-loy
     for _ in 1:int(upperindex(y)/2)
         y[int(rand()*length(y)+1)] = upy + yrng*(1+rand())
@@ -78,21 +78,21 @@ function f7(x::DataArray{Float64,1})
 end
 
 # power up
-function f8(x::DataArray{Float64,1})
+function f9(x::DataArray{Float64,1})
     y = x .^ (10*rand())
     return sum(isnan(y)) == 0 ? y : x
 end
 
 # power down
-function f9(x::DataArray{Float64,1})
+function f10(x::DataArray{Float64,1})
     y = x .^ (1/(10*rand()))
     return sum(isnan(y)) == 0 ? y : x
 end   
 
 # negative power / reciprocal
-f10(x::DataArray{Float64,1}) = 1 ./ x
+f11(x::DataArray{Float64,1}) = 1 ./ x
 
-funcs = [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10]
+funcs = [f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11]
 
 # function with metrics
 function score_gauss(df::DataFrame)
