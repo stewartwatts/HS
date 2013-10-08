@@ -2,6 +2,8 @@
 using DataFrames
 using Distributions
 
+include("gaussy.jl")
+
 # upper index that is 1% - 12% of a vector's non-NA length
 upperindex(x::DataArray{Float64,1}) = ifloor(length(removeNA(x))/100 * rand()*11 + 1)
 
@@ -106,8 +108,6 @@ for i in (4*length(funcs)+1):8*length(funcs)
     df[i] = funcs[fs[1]](funcs[fs[2]](funcs[fs[3]](df[i])))
 end
 
-show_metrics(df)
-df = gaussy(df)
-show_metrics(df)
 
+gaussy!(df; log=true, plot=true)
 
