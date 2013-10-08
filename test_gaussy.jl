@@ -5,7 +5,7 @@ using Distributions
 include("gaussy.jl")
 
 # upper index that is 1% - 12% of a vector's non-NA length
-upperindex(x::DataArray{Float64,1}) = ifloor(length(removeNA(x))/100 * rand()*11 + 1)
+upperindex(x::DataArray{Float64,1}) = iceil(length(removeNA(x))/100 * rand()*11)
 
 # identity
 f1(x::DataArray{Float64,1}) = x
@@ -23,7 +23,7 @@ f4(x::DataArray{Float64,1}) = exp(x)
 function f5(x::DataArray{Float64,1})
     y = deepcopy(x)
     for _ in 1:upperindex(y)
-        y[ifloor(rand()*length(y))+1] = -999
+        y[iceil(rand()*length(y))] = -999
     end
     return y
 end
@@ -32,7 +32,7 @@ end
 function f6(x::DataArray{Float64,1})
     y = deepcopy(x)
     for _ in 1:upperindex(y)
-        y[ifloor(rand()*length(y))+1] = NA
+        y[iceil(rand()*length(y))] = NA
     end
     return y
 end
@@ -40,13 +40,13 @@ end
 # upper tail discontinuous
 function f7(x::DataArray{Float64,1})
     y = deepcopy(x)
-    lowertail = ifloor(length(removeNA(y))/100.0 * ifloor(1 + 5*rand()))
-    uppertail = ifloor(length(removeNA(y))/100.0 * (100 - ifloor(1 + 5*rand())))
+    lowertail = iceil(length(removeNA(y))/100.0 * iceil(5*rand()))
+    uppertail = iceil(length(removeNA(y))/100.0 * (100 - iceil(5*rand())))
     loy = sort(removeNA(y))[lowertail]
     upy = sort(removeNA(y))[uppertail]
     yrng = upy-loy
     for _ in 1:upperindex(y)
-        y[ifloor(rand()*length(y)+1)] = upy + yrng*(1+rand())
+        y[iceil(rand()*length(y))] = upy + yrng*(1+rand())
     end
     return y
 end
@@ -54,13 +54,13 @@ end
 # lower tail discontinuous
 function f8(x::DataArray{Float64,1})
     y = deepcopy(x)
-    lowertail = ifloor(length(removeNA(y))/100.0 * ifloor(1 + 5*rand()))
-    uppertail = ifloor(length(removeNA(y))/100.0 * (100 - ifloor(1 + 5*rand())))
+    lowertail = iceil(length(removeNA(y))/100.0 * iceil(5*rand()))
+    uppertail = iceil(length(removeNA(y))/100.0 * (100 - iceil(5*rand())))
     loy = sort(removeNA(y))[lowertail]
     upy = sort(removeNA(y))[uppertail]
     yrng = upy-loy
     for _ in 1:upperindex(y)
-        y[ifloor(rand()*length(y)+1)] = loy - yrng*(1+rand())
+        y[iceil(rand()*length(y))] = loy - yrng*(1+rand())
     end
     return y
 end
@@ -68,16 +68,16 @@ end
 # both tails discontinuous
 function f9(x::DataArray{Float64,1})
     y = deepcopy(x)
-    lowertail = ifloor(length(removeNA(y))/100.0 * ifloor(1 + 5*rand()))
-    uppertail = ifloor(length(removeNA(y))/100.0 * (100 - ifloor(1 + 5*rand())))
+    lowertail = iceil(length(removeNA(y))/100.0 * iceil(5*rand()))
+    uppertail = iceil(length(removeNA(y))/100.0 * (100 - iceil(5*rand())))
     loy = sort(removeNA(y))[lowertail]
     upy = sort(removeNA(y))[uppertail]
     yrng = upy-loy
-    for _ in 1:ifloor(upperindex(y)/2)
-        y[ifloor(rand()*length(y)+1)] = upy + yrng*(1+rand())
+    for _ in 1:iceil(upperindex(y)/2)
+        y[iceil(rand()*length(y))] = upy + yrng*(1+rand())
     end
-    for _ in 1:ifloor(upperindex(y)/2)
-        y[ifloor(rand()*length(y)+1)] = loy - yrng*(1+rand())
+    for _ in 1:iceil(upperindex(y)/2)
+        y[iceil(rand()*length(y))] = loy - yrng*(1+rand())
     end
     return y
 end
@@ -112,5 +112,28 @@ for i in (4*length(funcs)+1):8*length(funcs)
     func_hist[i] = [funcs[fs[1]], funcs[fs[2]], funcs[fs[3]]]
 end
 
-old_df = deepcopy(df)
+old_df = deepcopy(df);
 gaussy!(df; log=true, plot=true)
+
+
+
+
+# DEBUG
+
+#for i=funcs, j=funcs, k=funcs
+#    x = DataArray(randn(1000))
+#    try
+#        x = i(j(k(x)))
+#    catch
+#        println(string(i, j, k))
+#    end
+#end
+
+
+#for i in 1:12
+#    print(string(i, ": ")); println(funcs[i])
+#    x = DataArray(randn(200))
+#    funcs[i](x)
+#end
+
+#/DEBUG
