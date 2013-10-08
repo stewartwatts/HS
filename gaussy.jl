@@ -45,10 +45,10 @@ end
 g0(x::DataArray{Float64,1}) = x
 
 # log
-g1(x::DataArray{Float64,1}) = min(removeNA(x)) >= 0.0 ? log(x) : x
+g1(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? log(x) : x
 
 # reciprocal
-g2(x::DataArray{Float64,1}) = min(removeNA(x)) >= 0.0 ? 1.0 / x : x
+g2(x::DataArray{Float64,1}) = min(removeNA(x)) > 0.0 ? 1.0 / x : x
 
 # exponential
 g3(x::DataArray{Float64,1}) = exp(x)
@@ -107,7 +107,7 @@ function gaussy!(df::DataFrame; log=false, filename="logs/gaussy_log.txt", plot=
           g2 => "1/x;",
           g3 => "exp(x);",
           g4 => "x.^2;",
-          g5 => "x.^0.5",
+          g5 => "x.^0.5;",
           g6 => "mode->NA;",
           g7 => "upp_tail->NA;",
           g8 => "low_tail->NA;"}
@@ -127,7 +127,7 @@ function gaussy!(df::DataFrame; log=false, filename="logs/gaussy_log.txt", plot=
         before_qtls = [quantile(sort_kurts, q) for q in quantiles]    
     end
 
-    # loop over cols, greedily replacing as abs(kurt) declines
+    # loop over cols, greedily replacing them with transforms to reduce abs(kurt)
     for cn in filter(c -> eltype(df[c]) <: Number, colnames(df))
         if log
             func_msg = []
@@ -135,17 +135,20 @@ function gaussy!(df::DataFrame; log=false, filename="logs/gaussy_log.txt", plot=
         tmp = eltype(df[cn]) <: FloatingPoint ? deepcopy(df[cn]) : 1.0 * deepcopy(df[cn])
         kurts = {g[1] => kurtosis(removeNA(g[1](tmp))) for g in gs}
         best_kurt = min(map(abs, [k[2] for k in kurts]))
-        min_g = filter(k -> abs(k[2]) == best_kurt, [k for k in kurts])[1][1]
-        while abs(kurts[min_g]) > 1.0 && best_kurt <= (abs(kurts[g0]) - 1.0)
-            min_g = filter(k -> abs(k[2]) == best_kurt, [k for k in kurts])[1][1]
+        min_g = filter(v -> abs(v[2]) == best_kurt, [k for k in kurts])[1][1]
+        while abs(kurtosis(removeNA(tmp))) > 1.0 && best_kurt <= (abs(kurtosis(removeNA(tmp))) - 1.0)
+            # transform and log
             tmp = min_g(tmp)
-            kurts = {g[1] => kurtosis(removeNA(g[1](tmp))) for g in gs}
-            best_kurt = min(map(abs, [k[2] for k in kurts]))
             if log
                 counts[min_g] += 1
                 kurt_vals[cn] = [kurt_vals[cn], best_kurt]
                 func_msg = [func_msg, gs[min_g]]
             end
+
+            # update test values
+            kurts = {g[1] => kurtosis(removeNA(g[1](tmp))) for g in gs}
+            min_g = filter(v -> abs(v[2]) == best_kurt, [k for k in kurts])[1][1]
+            best_kurt = min(map(abs, [k[2] for k in kurts]))
         end
 
         # log as you loop through df
@@ -178,5 +181,5 @@ function gaussy!(df::DataFrame; log=false, filename="logs/gaussy_log.txt", plot=
         plot_quantiles(plot_df, "logs/gaussy_kurt_plot.png")
     end
        
-    return df
+    return
 end
