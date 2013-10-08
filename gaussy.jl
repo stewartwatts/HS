@@ -128,13 +128,13 @@ function gaussy!(df::DataFrame; log=false, filename="logs/gaussy_log.txt", plot=
     end
 
     # loop over cols, greedily replacing them with transforms to reduce abs(kurt)
-    for cn in filter(c -> eltype(df[c]) <: Number, colnames(df))
+    for cn in num_cols
         if log
             func_msg = []
         end
         tmp = eltype(df[cn]) <: FloatingPoint ? deepcopy(df[cn]) : 1.0 * deepcopy(df[cn])
-        kurts = {g[1] => kurtosis(removeNA(g[1](tmp))) for g in gs}
-        best_kurt = min(map(abs, [k[2] for k in kurts]))
+        kurts = {g => kurtosis(removeNA(g(tmp))) for g in keys(gs)}
+        best_kurt = min(map(abs, vals(kurts)))
         min_g = filter(v -> abs(v[2]) == best_kurt, [k for k in kurts])[1][1]
         while abs(kurtosis(removeNA(tmp))) > 1.0 && best_kurt <= (abs(kurtosis(removeNA(tmp))) - 1.0)
             # transform and log
@@ -146,9 +146,9 @@ function gaussy!(df::DataFrame; log=false, filename="logs/gaussy_log.txt", plot=
             end
 
             # update test values
-            kurts = {g[1] => kurtosis(removeNA(g[1](tmp))) for g in gs}
+            kurts = {g => kurtosis(removeNA(g(tmp))) for g in keys(gs)}
             min_g = filter(v -> abs(v[2]) == best_kurt, [k for k in kurts])[1][1]
-            best_kurt = min(map(abs, [k[2] for k in kurts]))
+            best_kurt = min(map(abs, vals(kurts)))
         end
 
         # log as you loop through df
