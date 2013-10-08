@@ -106,6 +106,10 @@ for i in (4*length(funcs)+1):8*length(funcs)
     df[i] = funcs[fs[1]](funcs[fs[2]](funcs[fs[3]](df[i])))
 end
 
+show_metrics(df)
+df = gaussy(df)
+show_metrics(df)
+
 
 #   ---- gaussianify ----
 # - take transformations of variable
@@ -136,10 +140,9 @@ function write_log(filename, msg):
     end
 end
 
-### TODO TODO
+### TODO
 function summarize_log(path="logs/gaussy_log.txt")
 end
-### TODO TODO
     
 function diagnostic_msg(x::DataArray{Float64,1})
     msg = []
@@ -234,7 +237,7 @@ function gaussy!(df::DataArray{Float64,1}, log=false, filename="logs/gaussy_log.
     # loop over cols, greedily replacing as abs(kurt) declines
     for cn in colnames(df)
         if log
-            msg = []
+            func_msg = []
         end
         tmp = deepcopy(df[cn])
         kurts = {g[1] => kurtosis(removeNA(g[1](tmp))) for g in gs}
@@ -246,12 +249,16 @@ function gaussy!(df::DataArray{Float64,1}, log=false, filename="logs/gaussy_log.
             best_kurt = min(map(abs, [k[2] for k in kurts]))
             if log
                 counts[min_g] += 1
-                kurt_vals = [kurt_val, best_kurt]
-                msg = [msg, gs[min_g]]
+                kurt_vals[cn] = [kurt_vals[cn], best_kurt]
+                func_msg = [func_msg, gs[min_g]]
             end
         end
         if log
-            all_msg = string(cn, ":\ntransforms", join(msg, " "), "\nkurt vals:", join(map(string, kurt_vals[cn]), " "), "\ndiagnostics: ", diagnositc_msg(), "\n\n")
+            all_msg = string([string(cn,":"),
+                              string("transforms: ", join(func_msg, " ")),
+                              string("kurt vals: [", join(map(string, kurt_vals[cn]), " "), "]"),
+                              string("diagnostics: ", diagnositc_msg())],
+                             "\n")
             write_log(filename, all_msg)
         end
         # modify df IN-PLACE
@@ -259,10 +266,6 @@ function gaussy!(df::DataArray{Float64,1}, log=false, filename="logs/gaussy_log.
     end
     return
 end
-
-show_metrics(df)
-df = gaussy(df)
-show_metrics(df)
 
 
 
