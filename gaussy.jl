@@ -8,27 +8,6 @@ using Gadfly
 # - cut sorted variable at left tail, right tail, both tails
 # - WARN: heavy quantization, too many NAs
 
-# function with metrics
-function score_gauss(df::DataFrame)
-    kurts = map(c -> kurtosis(removeNA(df[c])), colnames(df)) 
-    skews = map(c -> skewness(removeNA(df[c])), colnames(df)) 
-    return (kurts, skews)
-end
-
-function plot_quantiles(df::DataFrame, filename::ASCIIString)
-    p = plot(df, x="quantiles", y="kurtosis", color="when", Geom.line)
-    draw(PNG(filename, 10inch, 6inch), p)
-end
-
-function plot_metrics_from_log(kurts, filename="logs/gaussy_log.txt")
-    using Gadfly
-    # parse log file
-    # TODO
-    
-    # plot starting / final quantiles (10% 20% ...) of sorted kurtoses
-    # TODO
-end
-
 function init_log(filename)
     if !isdir("logs")
         run(`mkdir logs/`)
@@ -39,8 +18,8 @@ function init_log(filename)
     end
 end
     
-### TODO
 function summarize_log(path="logs/gaussy_log.txt")
+    ### TODO
 end
     
 function diagnostic_msg(x::DataArray{Float64,1})
@@ -55,6 +34,11 @@ function diagnostic_msg(x::DataArray{Float64,1})
         msg = [msg, "Heavy quantization;"]
     end
     return join(msg, " ")
+end
+
+function plot_quantiles(df::DataFrame, filename::ASCIIString)
+    p = plot(df, x="quantiles", y="kurtosis", color="when", Geom.line)
+    draw(PNG(filename, 10inch, 6inch), p)
 end
 
 # identity
@@ -170,9 +154,7 @@ function gaussy!(df::DataFrame; log=false, filename="logs/gaussy_log.txt", plot=
                               string(cn, ":kurt_vals: [", join(map(string, kurt_vals[cn]), " "), "]"),
                               string(cn, ":diagnostics: ", diagnostic_msg(tmp))],
                              "\n")
-            #DEBUG
-            println(all_msg)
-            #/DEBUG
+            println(all_msg)                                                                   # DEBUG
             open(filename, "a") do f
                 write(f, all_msg)
             end
@@ -182,7 +164,7 @@ function gaussy!(df::DataFrame; log=false, filename="logs/gaussy_log.txt", plot=
         df[cn] = tmp
     end
 
-    # do plot difference in kurtosis before / after
+    # plot difference in kurtosis before / after
     if plot
         sort_kurts = sort([kurtosis(removeNA(df[cn])) for cn in num_cols])
         after_qtls = [quantile(sort_kurts, q) for q in quantiles]
@@ -192,6 +174,7 @@ function gaussy!(df::DataFrame; log=false, filename="logs/gaussy_log.txt", plot=
         plot_df["quantiles"] = [quantiles; quantiles; quantiles]
         plot_df["when"]      = [rep("before", 21); rep("after",21); rep("ones", 21)]
         plot_df["kurtosis"]  = [before_qtls; after_qtls; rep(1.0,21)]
+
         plot_quantiles(plot_df, "logs/gaussy_kurt_plot.png")
     end
        
