@@ -2,20 +2,19 @@ using DataFrames
 using RDatasets
 using GLM
 
-# globals
-POLYDEG = 2     # polynomial degree of feature models
-NOISE   = 0.25  # std of added noise
 
-# "swiss" dataset for modeling:: Fertility ~ Agriculture + Examination + Education + Catholic + Infant.Mortality
+# Fertility ~ Agriculture + Examination + Education + Catholic + Infant.Mortality
 swiss = data("datasets", "swiss")
 
-################## would be function START
+## FUNCTION
 df = swiss
 response = "Fertility"
 
 clean_colnames!(df)
 (m,n) = size(df)
-means, stds, fits = {}, {}, {}
+means = Dict{Union(UTF8String,ASCIIString),Float64}()
+stds  = Dict{Union(UTF8String,ASCIIString),Float64}()
+fits  = Dict{Union(UTF8String,ASCIIString),LmMod}()
 
 srand(1)
     
@@ -23,12 +22,16 @@ srand(1)
 cols = filter(c -> !(c in ["", response]), colnames(df))
 for col in cols
     for _ in 1:10
-        df[col][int(rand()*m)+1] = NA
+        df[col][ceil(rand()*m)] = NA
     end
 end
 
-# do smart inference of missing values
-# first recenter / rescale
+# model each column on other features
+for col in cols
+    fits[col] = lm(Formula(parse(string(col, " ~ ", join(filter(k -> k != col, cols), " + ")))), df)
+end
+
+# collect col stats
 for col in cols
     colmean = mean(removeNA(df[col]))
     colstd  = std(removeNA(df[col]))
@@ -37,33 +40,4 @@ for col in cols
     stsd[col] = colstd
 end
 
-# model each column on other features
-for col in cols
-    fits[col] = lm(Formula(parse(string(col, " ~ ", join(filter(k -> k != col, cols), " + ")))), df)
-end
-
-
-
-
-
-
-
-
-
-
-
-
-################## would be function END
-
-
-
-#### for some reason the above code does not work as a function
-##
-##smartNAfill(swiss, "Fertility")
-##ERROR: BoundsError()
-##in setindex! at bitarray.jl:534
-##in setindex! at /home/stewart/.julia/DataFrames/src/dataarray.jl:487
-##in smartNAfill at none:17 
-
-#function smartNAfill(df::DataFrame, response::Union(UTF8String,ASCIIString))
-#end
+##/FUNCTION
