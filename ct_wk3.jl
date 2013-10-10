@@ -19,7 +19,7 @@ std_by_lamb = map(x -> std(perf[:,x]), [1:4])
 println("std deviations by lambda [0, 0.5, 1/sqrt(2), 1]")
 println(std_by_lamb)
 
-# 5.
+## SETUP for 5. - 7.
 using DataFrames
 using Gadfly
 import Base.show
@@ -75,26 +75,65 @@ type LinReg
     end
 end
 
+type PLA
+    x::Array{Float64,2}
+    f::Line
+    y::Array{Float64,1}
+    w_star::Array
+    iters::Int64
+    function PLA(lr::LinReg)
+        if typeof(lr::LinReg) == Nothing
+            solve(lr)
+        end
+        new(lr.x, lr.f, lr.y, lr.w_star, 0)
+    end
+end
+
+function update_w(pla::PLA, row_index::Int)
+    pla.w_star = pla.w_star - pla.y[row_index] * pla.x[row_index,:]'
+    pla.iters = pla.iters + 1
+    return
+end
+
+function solve(pla::PLA)
+    while sum([evaluate(pla.x[i,:], pla.f) for i in 1:size(pla.x)[1]] .== pla.y) < length(pla.y)
+        for i in 1:length(pla.y)
+            if evaluate(pla.x[i,:], pla.f) != pla.y[i] 
+                break
+            end
+        end
+        update_w(pla)
+    end
+end
+
 function evaluate(p::Point, l::Line)
     w = wgt_from_line(l)
     return ([p.x0, p.x1, p.x2]' * w)[1] >= 0. ? 1. : -1.
 end
 
-function add_points(LinReg, N)
+function evaluate(p::Array{Float64,2}, l::Line)
+    w = wgt_from_line(l)
+    return (p * w)[1] >= 0. ? 1. : -1.
+end
+
+function evaluate(p::Array{Float64,2}, w::Array{Float64,1})
+    return (p * w)[1] >= 0. ? 1. : -1.
+end
+
+function add_points(lr::LinReg, N)
     new_x = zeros(N, 3)
     new_y = zeros(N)
     for i = 1:N
         p = makepoint()
         new_x[i,:] = [p.x0, p.x1, p.x2]
-        new_y[i] = evaluate(p, LinReg.f)
+        new_y[i] = evaluate(p, lr.f)
     end
-    LinReg.x = [LinReg.x; new_x]
-    LinReg.y = [LinReg.y; new_y]
+    lr.x = [lr.x; new_x]
+    lr.y = [lr.y; new_y]
     return
 end
 
 function solve(lr::LinReg)
-    println("solving LinReg ...")
     lr.w_star = pinv(lr.x' * lr.x) * lr.x' * lr.y
     return
 end
@@ -119,6 +158,9 @@ function LRplot(lr::LinReg)
 end
 
 function show(io::IO, lr::LinReg)
+    if typeof(lr::w_star) == Nothing
+        solve(lr)
+    end
     println(io, "x:")
     show(io, lr.x)
     print(io, "\n\n")
@@ -137,18 +179,77 @@ function show(io::IO, lr::LinReg)
     print(io, "\n\n")
 end
 
+function show(io::IO, pla::PLA)
+    println(io, "True:")
+    show(io, pla.f)                       # Line
+    print("\n")
+    show(io, wgt_from_line(pla.f))        # wgts
+    print(io, "\n\n")
+    println(io, "Model:")
+    show(io, line_from_wgt(pla.w_star))   # Line
+    print("\n")
+    show(io, pla.w_star)                  # wgts
+    print(io, "\n\n")
+    println(io, "Iters:")
+    show(io, pla.iters)
+    print("\n\n")
+    println("Num wrong:")
+    show(io, length(pla.y) - sum([evaluate(pla.x[i,:], pla.f) for i in 1:size(pla.x)[1]] .== pla.y))
+        
+end
+
+
 #########################
 #test
 lr = LinReg(10);
 solve(lr)
-lr
-LRplot(lr)
+pla = PLA(lr);
+pla
+solve(pla)
+pla
+[evaluate(pla.x[i,:], pla.f) for i in 1:size(pla.x)[1]] .== pla.y
 #########################
 
+# 5.
+runs = 1000;
+wrongs = zeros(runs);
+for i in 1:runs
+    lr = LinReg(100)
+    solve(lr)
+    for j in 1:size(lr.x)[1]
+        wrongs[i] += evaluate(lr.x[j,:], lr.f) == evaluate(lr.x[j,:], lr.w_star) ? 0. : 1.
+    end
+end
+println(mean(wrongs/100))
+
 # 6.
+runs = 1000;
+wrongs = zeros(runs);
+for i in 1:runs
+    N = 100
+    lr = LinReg(N)
+    solve(lr)
+    add_points(lr, 1000)
+    for j in (N+1):size(lr.x)[1]
+        #wrongs[i] += evaluate(lr.x[j,:], lr.f) == evaluate(lr.x[j,:], lr.w_star) ? 0. : 1.
+        wrongs[i] += lr.y[j] == evaluate(lr.x[j,:], lr.w_star) ? 0. : 1.
+    end
+end
+println(wrongs)
+println(mean(wrongs/1000))
 
 # 7.
-
+runs = 1000
+n_iter = rand(runs)
+for k = 1:runs
+    lr = LinReg(10);
+    solve(lr)
+    pla = PLA(lr);
+    solve(pla)
+    n_iter[k] = pla.iters
+end
+       
+    
 # 8.
 
 # 9.
