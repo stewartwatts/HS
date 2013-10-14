@@ -14,7 +14,7 @@ function clean_df!(df::AbstractDataFrame)
     return
 end
 
-function optNAFill{T<:String}(df::AbstractDataFrame, exclude_colnames::Array{T,1}; clean=true)
+function optNAfill(df::AbstractDataFrame; exclude_colnames=[], clean=true)
     # exclude_colnames: Array of strings containing colnames of data that can't reasonably
     #                   be inferred or created.  Ex: the response variable.  Any row with a
     #                   missing response variable should reasonably be excluded from analysis.
@@ -59,6 +59,9 @@ function optNAFill{T<:String}(df::AbstractDataFrame, exclude_colnames::Array{T,1
             sub_data_arr = DataArray(df[isna(df[col]), convert(Array{ASCIIString,1}, frm)][frms[frm],:])
             arr = convert(Array{Float64,2}, sub_data_arr)
             preds[frms[frm]] = predict(fit, [ones(size(arr,1)) arr])
+
+            # how good are these preds ?? backoff some to colmean given uncertainty
+            #     TODO
         end
         df_cp[isna(df[col]), col] = preds
     end
