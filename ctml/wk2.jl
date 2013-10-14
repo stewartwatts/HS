@@ -22,6 +22,7 @@ println(std_by_lamb)
 ## SETUP for 5. - 7.
 using DataFrames
 using Gadfly
+using Distributions
 import Base.show
 
 type Point
@@ -158,7 +159,7 @@ function LRplot(lr::LinReg)
 end
 
 function show(io::IO, lr::LinReg)
-    if typeof(lr::w_star) == Nothing
+    if typeof(lr.w_star) == Nothing
         solve(lr)
     end
     println(io, "x:")
@@ -251,8 +252,132 @@ end
        
     
 # 8.
+f(x1::Float64,x2::Float64) = (x1 ^ 2. + x2 ^ 2. - 0.6) >= 0 ? 1. : -1.
 
+function experiment8()
+    N = 1000
+    lr = LinReg(N)
+    # override the standard lr.y generation
+    for i = 1:N
+        lr.y[i] = f(lr.x[i,2:3]...)
+    end
+    inds = sample([1:N], int(N*.1), replace=false)
+    for i in inds
+        if lr.y[i] == 1.
+            lr.y[i] = -1.
+        elseif lr.y[i] == -1.
+            lr.y[i] = 1.
+        else
+            throw(DomainError())
+        end
+    end
+    solve(lr)
+
+    # get in-sample classification error
+    return sum([evaluate(lr.x[i,:], lr.w_star) for i in 1:length(lr.y)] .!= lr.y) / float(N)
+end
+
+function plotLR(lr::LinReg)
+    df = DataFrame()
+    df["x1"] = lr.x[:,2]
+    df["x2"] = lr.x[:,3]
+    df["y"]  = lr.y
+    p = plot(df, x="x1", y="x2", color="y", Geom.point)
+    draw(SVG("myplot.svg", 10inch, 10inch), p)
+end
+    
+runs = 1000
+class_error = rand(runs)
+for j in 1:runs
+    class_error[j] = experiment8()
+end
+print("average classification error: ")
+print(mean(class_error))
+    
 # 9.
+function experiment9()
+    N = 1000
+    lr = LinReg(N)
+    # override the standard lr.y generation
+    for i = 1:N
+        lr.y[i] = f(lr.x[i,2:3]...)
+    end
+    inds = sample([1:N], int(N*.1), replace=false)
+    for i in inds
+        if lr.y[i] == 1.
+            lr.y[i] = -1.
+        elseif lr.y[i] == -1.
+            lr.y[i] = 1.
+        else
+            throw(DomainError())
+        end
+    end
 
+    # transform lr.x
+    lr.x = [lr.x lr.x[:,2].*lr.x[:,3] lr.x[:,2].^2 lr.x[:,3].^2];
+    
+    solve(lr)
+
+    # get in-sample classification error
+    #return sum([evaluate(lr.x[i,:], lr.w_star) for i in 1:length(lr.y)] .!= lr.y) / float(N)
+    return lr
+end
+
+lr = experiment9()
+println(lr.w_star)
+
+    
 # 10.
+function experiment10()
+    N = 1000
+    lr = LinReg(N)
+    # override the standard lr.y generation
+    for i = 1:N
+        lr.y[i] = f(lr.x[i,2:3]...)
+    end
+    inds = sample([1:N], int(N*.1), replace=false)
+    for i in inds
+        if lr.y[i] == 1.
+            lr.y[i] = -1.
+        elseif lr.y[i] == -1.
+            lr.y[i] = 1.
+        else
+            throw(DomainError())
+        end
+    end
+    
+    # transform lr.x
+    lr.x = [lr.x lr.x[:,2].*lr.x[:,3] lr.x[:,2].^2 lr.x[:,3].^2];
 
+    solve(lr)
+    w_star = deepcopy(lr.w_star)
+    
+    # generate a new lr.x and re-transform
+    lr = LinReg(N)
+    for i = 1:N
+        lr.y[i] = f(lr.x[i,2:3]...)
+    end
+    inds = sample([1:N], int(N*.1), replace=false)
+    for i in inds
+        if lr.y[i] == 1.
+            lr.y[i] = -1.
+        elseif lr.y[i] == -1.
+            lr.y[i] = 1.
+        else
+            throw(DomainError())
+        end
+    end
+    lr.x = [lr.x lr.x[:,2].*lr.x[:,3] lr.x[:,2].^2 lr.x[:,3].^2];
+    lr.w_star = w_star
+    
+    # get in-sample classification error
+    return sum([evaluate(lr.x[i,:], lr.w_star) for i in 1:length(lr.y)] .!= lr.y) / float(N)
+end
+    
+runs = 1000;
+class_error = rand(runs);
+for j in 1:runs
+    class_error[j] = experiment10()
+end
+println("average classification error: ")
+println(mean(class_error))
