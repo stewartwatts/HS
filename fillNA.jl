@@ -26,17 +26,13 @@ function optNAfill(df::AbstractDataFrame; exclude_colnames=[], clean=true)
     
     cols = filter(c -> !in(c, ["" exclude_colnames]) && eltype(df[c]) <: FloatingPoint, colnames(df))
     
-    #(m,n) = size(df)
-    #fits  = Dict{Union(UTF8String,ASCIIString),LmMod}()
-    #fill_vals = Dict{Union(UTF8String,Dict{Integer,FloatingPoint}),LmMod}()
-    
-    # model each numerical column on other features
-    #for col in cols
-    #    fits[col] = lm(Formula(parse(string(col, " ~ ", join(filter(k -> k != col, cols), " + ")))), df)
-    #end
-
     # predict NAs
     for col in cols
+        colmeann = mean(removeNA(df[col]))
+        colstd = std(removeNA(df[col]))
+        colmin = min(removeNA(df[col]))
+        colmax = max(removeNA(df[col]))
+        
         other_cols = filter(c -> c != col, cols)
         # array of colnames with data -> indexes pertained to
         frms = Dict()
@@ -58,10 +54,11 @@ function optNAfill(df::AbstractDataFrame; exclude_colnames=[], clean=true)
             fit = lm(Formula(parse(string(col, " ~ ", join(frm, " + ")))), df)
             sub_data_arr = DataArray(df[isna(df[col]), convert(Array{ASCIIString,1}, frm)][frms[frm],:])
             arr = convert(Array{Float64,2}, sub_data_arr)
-            preds[frms[frm]] = predict(fit, [ones(size(arr,1)) arr])
+            pred_cands = predict(fit, [ones(size(arr,1)) arr])
 
             # how good are these preds ?? backoff some to colmean given uncertainty
-            #     TODO
+            
+            preds[frms[frm]] = 0. # TODO
         end
         df_cp[isna(df[col]), col] = preds
     end

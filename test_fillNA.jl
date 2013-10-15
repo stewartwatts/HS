@@ -55,3 +55,11 @@ end
 
 ## Do testing
 run_test("swiss", ["Fertility"])
+## TEST ON HS/imports-85.data
+## link: http://archive.ics.uci.edu/ml/datasets/Automobile
+
+## get some others too!!
+
+
+# FULL Fertility model
+# fit = lm(Formula(parse(string("Fertility ~ ", join(filter(c -> !in(c, ["", "Fertility"]), colnames(swiss)), " + ")))), swiss)
