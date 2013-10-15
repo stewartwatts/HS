@@ -14,8 +14,8 @@ df["line_y"] = -.2 + 0.8 * df["line_x"]
 #   Using Daniel Jones's first entry
 
 p = plot(df,
-         layer(x="x1",y="x2", Geom.point),
-         layer(x="line_x", y="line_y", Geom.line))
+         Layer(x="x1",y="x2", Geom.point),
+         Layer(x="line_x", y="line_y", Geom.line))
 draw(PNG("lt_plot.png", 7inch, 7inch), p)
 
 # Fails to set "p":
