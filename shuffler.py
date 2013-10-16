@@ -6,31 +6,36 @@ class TestShuffler(unittest.TestCase):
     def setUp(self):
         np.random.seed(seed=1)
         # dataset: tuple of (data -> num_ex x num_feat, target -> num_ex x 1)
-        self.DS = make_classification(n_informative=4,
-                                      n_classes=5)
-                
-    def test_mc_bc(self):
+        #self.mc_data_tuple = make_classification(n_informative=4,
+        #                              n_classes=5)
+        self.mc_data_tuple = (
+            np.array([[1,1,0,0],[0,1,1,0]], dtype='f8'),
+            np.array([0,1], dtype='f8')
+            )
+        
+    def test_dataset_mc_bc(self):
         # [ < ex > ] --> [ <[ex0]> ... <ex11> ]
         # multiclass target c [0,12) --> [0, 0, 1 ... 0, 0, 0]
-        pass
+        self.bc_data_tuple = dataset_mc_bc(self.mc_data_tuple, 2) 
+        self.assertTrue(np.all(self.bc_data_tuple[0] == np.array([[ 1.,  1.,  0.,  0.],
+                                                                  [ 0.,  0.,  1.,  1.],
+                                                                  [ 0.,  1.,  1.,  0.],
+                                                                  [ 1.,  0.,  0.,  1.]])))
+        self.assertTrue(np.all(self.bc_data_tuple[1] == np.array([1., 0., 0., 1.])))
         
-    def tearDown(self):
-        pass
-
 # Transofrming functions from multiclass to binaryclass
 
-def target_mc_bc(cls, n_cls):
+def target_mc_bc(_cls, n_cls):
     """cls from 0. to n_cls-1."""
-    assert int(cls) in range(n_cls)
+    assert int(_cls) in range(n_cls)
     out = np.zeros(n_cls)
-    out[cls] = 1.
+    out[_cls] = 1.
     return out
 
 def data_mc_bc(vec, n_cls):
     assert len(vec) % n_cls == 0, "\nlen(data vector) MOD num classes != 0\n"
     lencap = len(vec) / n_cls
     caps = {i: vec[(i*lencap):((i+1)*lencap)] for i in range(n_cls)}
-    print caps
     out = np.zeros(n_cls*len(vec)).reshape(n_cls, len(vec))
     for i in xrange(n_cls):
         # set the current capsule
@@ -53,8 +58,8 @@ def dataset_mc_bc(ds, n_cls):
     X = np.zeros(n_ex * n_cls * n_ft).reshape(n_ex * n_cls, n_ft)  # data matrix will be expanded by factor of n_cls
     y = np.zeros(n_ex * n_cls)                                     # as will targets
     for i in range(n_ex):
-        X[(i*n_cls):((i+1)*n_cls),:] = data_mc_bc(ds[0][i])
-        y[(i*n_cls):((i+1)*n_cls)] = target_mc_bc(ds[1][i])
+        X[(i*n_cls):((i+1)*n_cls),:] = data_mc_bc(ds[0][i], n_cls)
+        y[(i*n_cls):((i+1)*n_cls)] = target_mc_bc(ds[1][i], n_cls)
     return (X,y)
     
 if __name__ == "__main__":
