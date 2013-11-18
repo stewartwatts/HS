@@ -56,6 +56,7 @@ d3.select("p")
 	// update all rects
 	svg.selectAll("rect")
 	   .data(dataset)
+           .transition()
            .attr("y", function(d) {return h - yScale(d);})
 	   .attr("height", function(d) {return yScale(d);})
 	   .attr("fill", function(d) {return "rgb(0,0,"+d*10+")";});
