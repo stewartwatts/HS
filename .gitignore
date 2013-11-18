@@ -1,3 +1,8 @@
 .*history
 *.pyc
 *.pdf
+logs/*
+scrab/*
+euler/*
+misc/*
+ctml/*
