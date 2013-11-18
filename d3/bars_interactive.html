@@ -1,3 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Test</title>
+        <script type="text/javascript" src="d3/d3.v3.js"></script>
+    </head>
+    <body>
+      <p>Click on this text to update the chart with new data values (once).</p>
+      <br>
+        <script type="text/javascript">
+
 // nice bar plots
 var dataset = [ 5, 10, 13, 19, 21, 25, 22, 18, 15, 13,
                 11, 12, 15, 20, 18, 17, 16, 18, 23, 25 ];
@@ -68,3 +80,6 @@ d3.select("p")
            .attr("y", function(d) {return h - yScale(d) + 14;})
         
     });
+        </script>
+    </body>
+</html>
